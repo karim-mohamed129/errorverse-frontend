@@ -56,7 +56,7 @@ const translations = {
 };
 
 export default function UserHeader({
-  lang = "ar",
+  lang = "en",
   onLanguageChange,
   currentPage = "none",
   userName,

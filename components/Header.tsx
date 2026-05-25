@@ -131,7 +131,7 @@ const translations = {
 };
 
 export default function Header({
-  lang = "ar",
+  lang = "en",
   onLanguageChange,
   currentPage = "home",
 }: HeaderProps) {

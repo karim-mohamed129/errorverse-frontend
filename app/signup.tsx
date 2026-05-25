@@ -98,7 +98,7 @@ const copy = {
 };
 
 export default function SignUpPage() {
-  const [lang, setLang] = usePersistedLang("ar");
+  const [lang, setLang] = usePersistedLang("en");
 
   const [form, setForm] = useState<FormState>({
     firstName: "",

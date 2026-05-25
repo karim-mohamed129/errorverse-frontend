@@ -350,7 +350,7 @@ export default function App() {
     typeof window !== "undefined" ? window.innerWidth : 1440
   );
 
-  const [lang, setLang] = usePersistedLang("ar");
+  const [lang, setLang] = usePersistedLang("en");
   const [sections, setSections] = useState<SectionData[]>(() => buildStaticSections());
   const [blogs, setBlogs] = useState<BlogItem[]>(staticBlogs);
 
