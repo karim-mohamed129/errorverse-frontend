@@ -91,25 +91,25 @@ export default function Footer({ lang = "en" }: FooterProps) {
       dir={isArabic ? "rtl" : "ltr"}
     >
       <div className="footer-bg-stack" aria-hidden="true">
-        <img src={footerColorUri} alt="" className="footer-bg-image footer-bg-color" />
-        <img src={footerTextureUri} alt="" className="footer-bg-image footer-bg-texture" />
+        <img src={footerColorUri} alt="" className="footer-bg-image footer-bg-color" loading="lazy" decoding="async" />
+        <img src={footerTextureUri} alt="" className="footer-bg-image footer-bg-texture" loading="lazy" decoding="async" />
       </div>
 
       <div className="footer-container">
         <div className="footer-col footer-brand-col">
           <div className="footer-logo-col">
-            <img src={logoUri} alt="505 Error logo" className="footer-logo" />
+            <img src={logoUri} alt="505 Error logo" className="footer-logo" loading="lazy" decoding="async" />
           </div>
 
           <div className="footer-download-col">
             <h4 className="footer-title">{t.downloadApp}</h4>
 
             <a href="#" className="store-link">
-              <img src={googlePlayUri} alt="Google Play" className="store-badge" />
+              <img src={googlePlayUri} alt="Google Play" className="store-badge" loading="lazy" decoding="async" />
             </a>
 
             <a href="#" className="store-link">
-              <img src={appleStoreUri} alt="App Store" className="store-badge" />
+              <img src={appleStoreUri} alt="App Store" className="store-badge" loading="lazy" decoding="async" />
             </a>
           </div>
         </div>
@@ -133,19 +133,19 @@ export default function Footer({ lang = "en" }: FooterProps) {
           <h4 className="footer-title">{t.contactUs}</h4>
 
           <a href="tel:+97450570808" className="footer-contact-link">
-            <span className="contact-icon"><img src={contactIconUri} alt="" /></span>
+            <span className="contact-icon"><img src={contactIconUri} alt="" loading="lazy" decoding="async" /></span>
             <span>+974 50570808</span>
           </a>
 
           <a href="mailto:info@505error.com" className="footer-contact-link">
-            <span className="contact-icon"><img src={gmailIconUri} alt="" /></span>
+            <span className="contact-icon"><img src={gmailIconUri} alt="" loading="lazy" decoding="async" /></span>
             <span>info@505error.com</span>
           </a>
 
           <div className="socials">
             {socialLinks.map((social) => (
               <a href="#" className="social-box" aria-label={social.label} key={social.label}>
-                <img src={social.icon} alt="" className="social-icon-img" />
+                <img src={social.icon} alt="" className="social-icon-img" loading="lazy" decoding="async" />
               </a>
             ))}
           </div>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { memo } from "react";
 import SectionHeader from "./SectionHeader";
 import MangaCard, { CardItem, CardVariant } from "./MangaCard";
 import type { Lang } from "./Header";
@@ -36,7 +36,7 @@ type SliderSectionProps = {
   lang?: Lang;
 };
 
-export default function SliderSection({
+function SliderSection({
   index,
   title,
   rowClass,
@@ -95,6 +95,8 @@ export default function SliderSection({
               alt=""
               className="arrow-icon left"
               draggable={false}
+              loading="lazy"
+              decoding="async"
             />
           </button>
         )}
@@ -134,6 +136,7 @@ export default function SliderSection({
                     sharesImage={sharesImage}
                     onToggleFavorite={onToggleFavorite}
                     lang={lang}
+                    priority={index === 0 && itemIndex < (isMobile ? 2 : 4)}
                   />
                 </div>
               ))}
@@ -154,6 +157,8 @@ export default function SliderSection({
               alt=""
               className="arrow-icon right"
               draggable={false}
+              loading="lazy"
+              decoding="async"
             />
           </button>
         )}
@@ -161,3 +166,5 @@ export default function SliderSection({
     </section>
   );
 }
+
+export default memo(SliderSection);

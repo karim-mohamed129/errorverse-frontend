@@ -167,9 +167,6 @@ export default function Header({
 
   const [settings, setSettings] = useState<SiteSettings | null>(null);
 
-  useEffect(() => {
-    getSiteSettings().then(setSettings);
-  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -225,6 +222,24 @@ export default function Header({
   const safeLang: Lang = lang === "ar" ? "ar" : "en";
   const t = translations[safeLang];
   const isArabic = safeLang === "ar";
+
+  useEffect(() => {
+    // English uses the bundled logo, so do not slow first paint with settings API.
+    if (!isArabic) {
+      setSettings(null);
+      return;
+    }
+
+    let isMounted = true;
+
+    getSiteSettings().then((nextSettings) => {
+      if (isMounted) setSettings(nextSettings);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isArabic]);
 
   useArabicDomTranslator(safeLang);
 
@@ -386,7 +401,14 @@ export default function Header({
       dir={isArabic ? "rtl" : "ltr"}
     >
       <div className="top-header">
-        <img src={headerBgUri} alt="" className="top-header-bg" />
+        <img
+          src={headerBgUri}
+          alt=""
+          className="top-header-bg"
+          loading="eager"
+          decoding="async"
+          {...({ fetchPriority: "high" } as any)}
+        />
 
         <div className="container-fluid header-inner">
           <a className="brand-wrap" href="/" onClick={closeMenu}>
@@ -396,11 +418,17 @@ export default function Header({
                   src={resolvedLogo}
                   alt="505 Error"
                   className="header-logo header-logo-main"
+                  loading="eager"
+                  decoding="async"
+                  {...({ fetchPriority: "high" } as any)}
                 />
                 <img
                   src={androidIconUri || resolvedLogo}
                   alt="505 Error"
                   className="header-logo-small-screen"
+                  loading="eager"
+                  decoding="async"
+                  {...({ fetchPriority: "high" } as any)}
                 />
               </>
             )}
@@ -516,10 +544,10 @@ export default function Header({
       {mobileMenuOpen ? (
         <div className="figma-mobile-menu" role="dialog" aria-modal="true">
           <div className="figma-mobile-menu-head">
-            <img src={headerBgUri} alt="" className="figma-mobile-menu-bg" />
+            <img src={headerBgUri} alt="" className="figma-mobile-menu-bg" loading="eager" decoding="async" {...({ fetchPriority: "high" } as any)} />
             <a className="figma-mobile-menu-logo-link" href="/" onClick={closeMenu}>
               {resolvedLogo && (
-                <img src={resolvedLogo} alt="505 Error" className="figma-mobile-menu-logo" />
+                <img src={resolvedLogo} alt="505 Error" className="figma-mobile-menu-logo" loading="eager" decoding="async" {...({ fetchPriority: "high" } as any)} />
               )}
             </a>
             <button
@@ -528,8 +556,8 @@ export default function Header({
               onClick={closeMenu}
               aria-label="Close menu"
             >
-              <img src={closeCircleUri} alt="" className="figma-mobile-menu-close-circle" />
-              <img src={closeXUri} alt="" className="figma-mobile-menu-close-x" />
+              <img src={closeCircleUri} alt="" className="figma-mobile-menu-close-circle" loading="lazy" decoding="async" />
+              <img src={closeXUri} alt="" className="figma-mobile-menu-close-x" loading="lazy" decoding="async" />
             </button>
           </div>
 

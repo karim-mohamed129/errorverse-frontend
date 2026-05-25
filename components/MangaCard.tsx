@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { memo, useState, useEffect } from "react";
 import "./MangaCard.css";
 // import { getStoredUser } from "../services/dashboardApi";
 
@@ -64,6 +64,7 @@ type MangaCardProps = {
   onToggleFavorite?: (item: CardItem) => void;
   style?: React.CSSProperties;
   lang?: string;
+  priority?: boolean;
 };
 
 function StatsOverlay({
@@ -103,7 +104,7 @@ function StatsOverlay({
   );
 }
 
-export default function MangaCard({
+function MangaCard({
   item,
   variant,
   isMobile,
@@ -115,6 +116,7 @@ export default function MangaCard({
   onToggleFavorite,
   style,
   lang = "en",
+  priority = false,
 }: MangaCardProps) {
   // Initialize from localStorage if available, otherwise use initialIsFavorite prop
   const [isFavorite, setIsFavorite] = useState(() => {
@@ -198,8 +200,10 @@ export default function MangaCard({
             src={item.image}
             alt={item.title}
             className="manga-cover"
-            loading="lazy"
+            loading={priority ? "eager" : "lazy"}
+            decoding="async"
             draggable={false}
+            {...({ fetchPriority: priority ? "high" : "auto" } as any)}
           />
         )}
 
@@ -312,8 +316,10 @@ export default function MangaCard({
               src={item.image}
               alt={item.episodeTitle || item.title}
               className="manga-cover favourites-chapter-image"
-              loading="lazy"
+              loading={priority ? "eager" : "lazy"}
+              decoding="async"
               draggable={false}
+              {...({ fetchPriority: priority ? "high" : "auto" } as any)}
             />
           </div>
         )}
@@ -443,3 +449,5 @@ export default function MangaCard({
     </article>
   );
 }
+
+export default memo(MangaCard);

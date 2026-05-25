@@ -46,6 +46,7 @@ const BlogCard = ({ blog, onReadMore, lang = "en" }: BlogCardProps) => {
           alt={blog.title}
           className="blog-image"
           loading="lazy"
+          decoding="async"
           draggable={false}
         />
       </div>
@@ -66,8 +67,8 @@ const BlogCard = ({ blog, onReadMore, lang = "en" }: BlogCardProps) => {
         >
           <span className="see-more-title">{isArabic ? tUi(lang, "readMore") : "Read More"}</span>
           <span className="blog-read-more-icons" aria-hidden="true">
-            <img src={readMoreIconUri} alt="" className="blog-read-more-icon" draggable={false} />
-            <img src={readMoreIconUri} alt="" className="blog-read-more-icon" draggable={false} />
+            <img src={readMoreIconUri} alt="" className="blog-read-more-icon" draggable={false} loading="lazy" decoding="async" />
+            <img src={readMoreIconUri} alt="" className="blog-read-more-icon" draggable={false} loading="lazy" decoding="async" />
           </span>
         </button>
       </div>

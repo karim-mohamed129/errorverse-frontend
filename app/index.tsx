@@ -1,52 +1,38 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, {
+  Suspense,
+  lazy,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import Header from "../components/Header";
-import Footer from "../components/Footer";
 import BackToTop from "../components/BackToTop";
 import SectionHeader from "../components/SectionHeader";
 import SliderSection from "../components/SliderSection";
 import BlogCard, { BlogItem } from "../components/BlogCard";
 import { CardItem, CardVariant } from "../components/MangaCard";
-import { getHomeData, HomeApiData, HomeBlogApiItem, HomeContentApiItem } from "../services/homeApi";
+import {
+  getHomeData,
+  readCachedHomeData,
+  HomeApiData,
+  HomeBlogApiItem,
+  HomeContentApiItem,
+} from "../services/homeApi";
 import { resolveApiAsset } from "../services/apiHelpers";
 import { usePersistedLang } from "../components/usePersistedLang";
-import "bootstrap/dist/css/bootstrap.min.css";
 import "./Globals.css";
 
 import arrowImg from "../assets/images/arrow.png";
 import crownImg from "../assets/images/crown.png";
-
-import homeExclusive1 from "../assets/images/home/1.png";
-import homeExclusive2 from "../assets/images/home/2.png";
-import homeExclusive3 from "../assets/images/home/3.png";
-import homeExclusive4 from "../assets/images/home/4.png";
-
-import homeTrending1 from "../assets/images/home/5.png";
-import homeTrending2 from "../assets/images/home/6.png";
-import homeTrending3 from "../assets/images/home/7.png";
-import homeTrending4 from "../assets/images/home/8.png";
-import homeTrending5 from "../assets/images/home/9.png";
-
-import homeJustDropped1 from "../assets/images/home/10.png";
-import homeJustDropped2 from "../assets/images/home/11.png";
-import homeJustDropped3 from "../assets/images/home/12.png";
-import homeJustDropped4 from "../assets/images/home/13.png";
-import homeJustDropped5 from "../assets/images/home/14.png";
-
-import homeTopPick1 from "../assets/images/home/15.png";
-import homeTopPick2 from "../assets/images/home/16.png";
-import homeTopPick3 from "../assets/images/home/17.png";
-import homeTopPick4 from "../assets/images/home/18.png";
-import homeTopPick5 from "../assets/images/home/19.png";
-
-import homeBlog1 from "../assets/images/home/20.png";
-import homeBlog2 from "../assets/images/home/21.png";
-import homeBlog3 from "../assets/images/home/22.png";
-
 import viewsIcon from "../assets/images/dashbaord/icons/views.png";
 import likesIcon from "../assets/images/dashbaord/icons/likes.png";
 import sharesIcon from "../assets/images/dashbaord/icons/share.png";
 import chipShape from "../assets/icons/chip-shape.svg";
 import heart from "../assets/icons/heart.svg";
+
+const Footer = lazy(() => import("../components/Footer"));
 
 type SectionData = {
   name: string;
@@ -75,159 +61,55 @@ const sharesUri = assetUri(sharesIcon);
 const chipShapeUri = assetUri(chipShape);
 const heartUri = assetUri(heart);
 
-const homeExclusiveImages = [
-  assetUri(homeExclusive1),
-  assetUri(homeExclusive2),
-  assetUri(homeExclusive3),
-  assetUri(homeExclusive4),
+const FALLBACK_IMAGE = "https://dreamhrms.com/error_505/images/default.png";
+
+const SECTION_CONFIG: Array<Pick<SectionData, "name" | "variant" | "rowClass"> & { count: number }> = [
+  { name: "EXCLUSIVE CONTENT", variant: "featured", rowClass: "row-1", count: 2 },
+  { name: "TRENDING", variant: "standard", rowClass: "row-2", count: 4 },
+  { name: "JUST DROPPED", variant: "chapter", rowClass: "row-3", count: 4 },
+  { name: "TOP PICKS", variant: "compactOverlay", rowClass: "row-4", count: 2 },
 ];
 
-const homeTrendingImages = [
-  assetUri(homeTrending1),
-  assetUri(homeTrending2),
-  assetUri(homeTrending3),
-  assetUri(homeTrending4),
-  assetUri(homeTrending5),
-];
+const createFallbackCard = (
+  rowClass: string,
+  variant: CardVariant,
+  index: number
+): CardItem => ({
+  id: `${rowClass}-fallback-${index + 1}`,
+  href: "/categories",
+  image: FALLBACK_IMAGE,
+  title: variant === "featured" ? `Exclusive Content ${index + 1}` : "THE TITTLE",
+  views: "0",
+  likes: "0",
+  comments: "0",
+  chapter: variant === "chapter" || variant === "featured" ? "CH.12" : "",
+  type: variant === "featured" ? "ONESHOT MANGA" : "MANGA",
+  creator: "",
+  dropped: false,
+  topLabel: variant === "featured" ? "ONESHOT MANGA" : "MANGA",
+  ctaLabel: variant === "featured" ? "NEXT CHAPTER" : "Read More",
+  metaDate: variant === "featured" ? "Sat 15th . Oct" : "",
+  metaIcon: variant === "featured" ? crownUri : "",
+  author: "",
+  isFavorite: false,
+});
 
-const homeJustDroppedImages = [
-  assetUri(homeJustDropped1),
-  assetUri(homeJustDropped2),
-  assetUri(homeJustDropped3),
-  assetUri(homeJustDropped4),
-  assetUri(homeJustDropped5),
-];
-
-const homeTopPickImages = [
-  assetUri(homeTopPick1),
-  assetUri(homeTopPick2),
-  assetUri(homeTopPick3),
-  assetUri(homeTopPick4),
-  assetUri(homeTopPick5),
-];
-
-const homeBlogImages = [
-  assetUri(homeBlog1),
-  assetUri(homeBlog2),
-  assetUri(homeBlog3),
-];
-
-const buildStaticSections = (): SectionData[] => {
-  const exclusiveItems: CardItem[] = homeExclusiveImages.map((image, index) => ({
-    id: `exclusive-${index + 1}`,
-    href: "/categories",
-    image,
-    title: `Exclusive Content ${index + 1}`,
-    views: "33K",
-    likes: "10K",
-    comments: "800",
-    chapter: "CH.12",
-    type: "ONESHOT MANGA",
-    creator: "",
-    dropped: false,
-    topLabel: "ONESHOT MANGA",
-    ctaLabel: "NEXT CHAPTER",
-    metaDate: "Sat 15th . Oct",
-    metaIcon: crownUri,
-    author: "",
-    isFavorite: false,
+const buildLightFallbackSections = (): SectionData[] =>
+  SECTION_CONFIG.map((section) => ({
+    name: section.name,
+    variant: section.variant,
+    rowClass: section.rowClass,
+    items: Array.from({ length: section.count }, (_, index) =>
+      createFallbackCard(section.rowClass, section.variant, index)
+    ),
   }));
 
-  const trendingItems: CardItem[] = homeTrendingImages.map((image, index) => ({
-    id: `trending-${index + 1}`,
-    href: "/categories",
-    image,
-    title: "THE TITTLE",
-    views: "33K",
-    likes: "10K",
-    comments: "800",
-    chapter: "",
-    type: "MANGA",
-    creator: "",
-    dropped: false,
-    topLabel: "MANGA",
-    ctaLabel: "Read More",
-    metaDate: "",
-    metaIcon: "",
-    author: "",
-    isFavorite: false,
-  }));
-
-  const justDroppedItems: CardItem[] = homeJustDroppedImages.map((image, index) => ({
-    id: `just-dropped-${index + 1}`,
-    href: "/categories",
-    image,
-    title: "THE TITTLE",
-    views: "33K",
-    likes: "10K",
-    comments: "800",
-    chapter: "CH.12",
-    type: "",
-    creator: "",
-    dropped: false,
-    topLabel: "MANGA",
-    ctaLabel: "Read More",
-    metaDate: "",
-    metaIcon: "",
-    author: "",
-    isFavorite: false,
-  }));
-
-  const topPickItems: CardItem[] = homeTopPickImages.map((image, index) => ({
-    id: `top-picks-${index + 1}`,
-    href: "/categories",
-    image,
-    title: "",
-    views: "33K",
-    likes: "10K",
-    comments: "800",
-    chapter: "",
-    type: "",
-    creator: "",
-    dropped: false,
-    topLabel: "MANGA",
-    ctaLabel: "Read More",
-    metaDate: "",
-    metaIcon: "",
-    author: "",
-    isFavorite: false,
-  }));
-
-  return [
-    {
-      name: "EXCLUSIVE CONTENT",
-      variant: "featured",
-      rowClass: "row-1",
-      items: exclusiveItems,
-    },
-    {
-      name: "TRENDING",
-      variant: "standard",
-      rowClass: "row-2",
-      items: trendingItems,
-    },
-    {
-      name: "JUST DROPPED",
-      variant: "chapter",
-      rowClass: "row-3",
-      items: justDroppedItems,
-    },
-    {
-      name: "TOP PICKS",
-      variant: "compactOverlay",
-      rowClass: "row-4",
-      items: topPickItems,
-    },
-  ];
-};
-
-const staticBlogs: BlogItem[] = homeBlogImages.map((image, index) => ({
-  id: `blog-${index + 1}`,
-  image,
+const staticBlogs: BlogItem[] = [1, 2, 3].map((index) => ({
+  id: `blog-fallback-${index}`,
+  image: FALLBACK_IMAGE,
   title: "BLOG NAME",
-  date: "26 SEP 2026",
-  excerpt:
-    "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla aliquam purus ex, eget rutrum massa feugiat et. Praesent interdum justo a magna ultrices mattis. Curabitur pharetra",
+  date: "",
+  excerpt: "",
   category: "",
 }));
 
@@ -272,7 +154,7 @@ const mapContentToCard = (
 ): CardItem => {
   const contentType = safeText(item.content_type, fallback.type || "MANGA").toUpperCase();
   const nextChapter = safeText(item.next_chapter, fallback.ctaLabel || "Read More");
-  const image = resolveApiAsset(item.cover_image || item.image) || fallback.image;
+  const image = resolveApiAsset(item.cover_image || item.image) || fallback.image || FALLBACK_IMAGE;
 
   return {
     ...fallback,
@@ -296,7 +178,7 @@ const mapContentToCard = (
 const mapBlogToCard = (blog: HomeBlogApiItem, fallback: BlogItem, index: number): BlogItem => ({
   ...fallback,
   id: String(blog.id ?? fallback.id ?? index),
-  image: resolveApiAsset(blog.image) || fallback.image,
+  image: resolveApiAsset(blog.image) || fallback.image || FALLBACK_IMAGE,
   title: safeText(blog.title, fallback.title || "BLOG NAME"),
   date: safeText(blog.created_at, fallback.date || ""),
   excerpt: safeText(blog.content, fallback.excerpt || ""),
@@ -317,15 +199,17 @@ const replaceSectionItems = (
         mapContentToCard(
           item,
           section.variant,
-          section.items[index % section.items.length] || section.items[0],
+          section.items[index % section.items.length] ||
+            createFallbackCard(section.rowClass, section.variant, index),
           index
         )
       ),
     };
   });
 
-const buildSectionsFromApi = (homeData: HomeApiData): SectionData[] => {
-  let sections = buildStaticSections();
+const buildSectionsFromApi = (homeData: HomeApiData | null): SectionData[] => {
+  let sections = buildLightFallbackSections();
+  if (!homeData) return sections;
 
   sections = replaceSectionItems(sections, "row-1", homeData.exclusive);
   sections = replaceSectionItems(sections, "row-2", homeData.trending);
@@ -335,8 +219,8 @@ const buildSectionsFromApi = (homeData: HomeApiData): SectionData[] => {
   return sections;
 };
 
-const buildBlogsFromApi = (homeData: HomeApiData): BlogItem[] => {
-  if (!homeData.blogs?.length) return staticBlogs;
+const buildBlogsFromApi = (homeData: HomeApiData | null): BlogItem[] => {
+  if (!homeData?.blogs?.length) return staticBlogs;
 
   return homeData.blogs.map((blog, index) =>
     mapBlogToCard(blog, staticBlogs[index % staticBlogs.length] || staticBlogs[0], index)
@@ -345,37 +229,31 @@ const buildBlogsFromApi = (homeData: HomeApiData): BlogItem[] => {
 
 export default function App() {
   const scrollRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const resizeFrameRef = useRef<number | null>(null);
   const [dragStates, setDragStates] = useState<Record<number, DragState>>({});
   const [windowWidth, setWindowWidth] = useState<number>(
     typeof window !== "undefined" ? window.innerWidth : 1440
   );
 
   const [lang, setLang] = usePersistedLang("en");
-  const [sections, setSections] = useState<SectionData[]>(() => buildStaticSections());
-  const [blogs, setBlogs] = useState<BlogItem[]>(staticBlogs);
+  const [homeData, setHomeData] = useState<HomeApiData | null>(() => readCachedHomeData());
 
   const isMobile = windowWidth <= 991;
   const isArabic = lang === "ar";
   const pageDir = isArabic ? "rtl" : "ltr";
+
+  const sections = useMemo(() => buildSectionsFromApi(homeData), [homeData]);
+  const blogs = useMemo(() => buildBlogsFromApi(homeData), [homeData]);
 
   useEffect(() => {
     let isMounted = true;
 
     const loadHomeData = async () => {
       try {
-        const homeData = await getHomeData();
-
-        if (!isMounted) return;
-
-        setSections(buildSectionsFromApi(homeData));
-        setBlogs(buildBlogsFromApi(homeData));
+        const nextHomeData = await getHomeData();
+        if (isMounted) setHomeData(nextHomeData);
       } catch (error) {
         console.error("Failed to load home API data:", error);
-
-        if (!isMounted) return;
-
-        setSections(buildStaticSections());
-        setBlogs(staticBlogs);
       }
     };
 
@@ -387,12 +265,22 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const handleResize = () => setWindowWidth(window.innerWidth);
+    const handleResize = () => {
+      if (resizeFrameRef.current !== null) cancelAnimationFrame(resizeFrameRef.current);
 
-    window.addEventListener("resize", handleResize);
+      resizeFrameRef.current = requestAnimationFrame(() => {
+        setWindowWidth(window.innerWidth);
+        resizeFrameRef.current = null;
+      });
+    };
+
+    window.addEventListener("resize", handleResize, { passive: true });
     handleResize();
 
-    return () => window.removeEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      if (resizeFrameRef.current !== null) cancelAnimationFrame(resizeFrameRef.current);
+    };
   }, []);
 
   useEffect(() => {
@@ -417,7 +305,7 @@ export default function App() {
     });
   }, [lang]);
 
-  const getCardStep = (index: number) => {
+  const getCardStep = useCallback((index: number) => {
     const container = scrollRefs.current[index];
     if (!container) return 0;
 
@@ -436,139 +324,151 @@ export default function App() {
     const cardWidth = firstCard.offsetWidth;
 
     return cardWidth + gap;
-  };
+  }, []);
 
-  const getVisibleCards = (index: number) => {
-    const row = document.querySelector(
-      `.row-${index + 1}`
-    ) as HTMLElement | null;
-
+  const getVisibleCards = useCallback((index: number) => {
+    const row = document.querySelector(`.row-${index + 1}`) as HTMLElement | null;
     if (!row) return 1;
 
     const variableName = index === 4 ? "--blog-cols" : "--cols";
-    const rawCols = window
-      .getComputedStyle(row)
-      .getPropertyValue(variableName)
-      .trim();
-
+    const rawCols = window.getComputedStyle(row).getPropertyValue(variableName).trim();
     const cols = parseFloat(rawCols);
 
     if (!Number.isFinite(cols) || cols <= 0) return 1;
-
     return cols;
-  };
+  }, []);
 
-  const getScrollAmount = (index: number) => {
-    const step = getCardStep(index);
-    return step * getVisibleCards(index);
-  };
+  const getScrollAmount = useCallback(
+    (index: number) => {
+      const step = getCardStep(index);
+      return step * getVisibleCards(index);
+    },
+    [getCardStep, getVisibleCards]
+  );
 
-  const snapToNearestCard = (index: number) => {
-    const container = scrollRefs.current[index];
-    if (!container) return;
+  const snapToNearestCard = useCallback(
+    (index: number) => {
+      const container = scrollRefs.current[index];
+      if (!container) return;
 
-    const step = getCardStep(index);
-    if (!step) return;
+      const step = getCardStep(index);
+      if (!step) return;
 
-    const snappedLeft = Math.round(container.scrollLeft / step) * step;
+      const snappedLeft = Math.round(container.scrollLeft / step) * step;
+      container.scrollTo({ left: snappedLeft, behavior: "smooth" });
+    },
+    [getCardStep]
+  );
 
-    container.scrollTo({
-      left: snappedLeft,
-      behavior: "smooth",
-    });
-  };
+  const scrollLeftFn = useCallback(
+    (index: number) => {
+      const amount = getScrollAmount(index);
 
-  const scrollLeftFn = (index: number) => {
-    const amount = getScrollAmount(index);
+      scrollRefs.current[index]?.scrollBy({
+        left: isArabic ? amount : -amount,
+        behavior: "smooth",
+      });
+    },
+    [getScrollAmount, isArabic]
+  );
 
-    scrollRefs.current[index]?.scrollBy({
-      left: isArabic ? amount : -amount,
-      behavior: "smooth",
-    });
-  };
+  const scrollRightFn = useCallback(
+    (index: number) => {
+      const amount = getScrollAmount(index);
 
-  const scrollRightFn = (index: number) => {
-    const amount = getScrollAmount(index);
+      scrollRefs.current[index]?.scrollBy({
+        left: isArabic ? -amount : amount,
+        behavior: "smooth",
+      });
+    },
+    [getScrollAmount, isArabic]
+  );
 
-    scrollRefs.current[index]?.scrollBy({
-      left: isArabic ? -amount : amount,
-      behavior: "smooth",
-    });
-  };
+  const handleMouseDown = useCallback(
+    (index: number, e: React.MouseEvent<HTMLDivElement>) => {
+      if (isMobile) return;
 
-  const handleMouseDown = (
-    index: number,
-    e: React.MouseEvent<HTMLDivElement>
-  ) => {
-    if (isMobile) return;
+      const slider = scrollRefs.current[index];
+      if (!slider) return;
 
-    const slider = scrollRefs.current[index];
-    if (!slider) return;
+      setDragStates((prev) => ({
+        ...prev,
+        [index]: {
+          isDown: true,
+          startX: e.pageX - slider.offsetLeft,
+          scrollLeft: slider.scrollLeft,
+        },
+      }));
+    },
+    [isMobile]
+  );
 
-    setDragStates((prev) => ({
-      ...prev,
-      [index]: {
-        isDown: true,
-        startX: e.pageX - slider.offsetLeft,
-        scrollLeft: slider.scrollLeft,
-      },
-    }));
-  };
+  const handleMouseLeave = useCallback(
+    (index: number) => {
+      const wasDragging = dragStates[index]?.isDown;
 
-  const handleMouseLeave = (index: number) => {
-    const wasDragging = dragStates[index]?.isDown;
-
-    setDragStates((prev) => ({
-      ...prev,
-      [index]: {
-        ...(prev[index] || {
-          startX: 0,
-          scrollLeft: 0,
+      setDragStates((prev) => ({
+        ...prev,
+        [index]: {
+          ...(prev[index] || {
+            startX: 0,
+            scrollLeft: 0,
+            isDown: false,
+          }),
           isDown: false,
-        }),
-        isDown: false,
-      },
-    }));
+        },
+      }));
 
-    if (wasDragging) {
+      if (wasDragging) snapToNearestCard(index);
+    },
+    [dragStates, snapToNearestCard]
+  );
+
+  const handleMouseUp = useCallback(
+    (index: number) => {
+      setDragStates((prev) => ({
+        ...prev,
+        [index]: {
+          ...(prev[index] || {
+            startX: 0,
+            scrollLeft: 0,
+            isDown: false,
+          }),
+          isDown: false,
+        },
+      }));
+
       snapToNearestCard(index);
-    }
-  };
+    },
+    [snapToNearestCard]
+  );
 
-  const handleMouseUp = (index: number) => {
-    setDragStates((prev) => ({
-      ...prev,
-      [index]: {
-        ...(prev[index] || {
-          startX: 0,
-          scrollLeft: 0,
-          isDown: false,
-        }),
-        isDown: false,
-      },
-    }));
+  const handleMouseMove = useCallback(
+    (index: number, e: React.MouseEvent<HTMLDivElement>) => {
+      if (isMobile) return;
 
-    snapToNearestCard(index);
-  };
+      const slider = scrollRefs.current[index];
+      const state = dragStates[index];
 
-  const handleMouseMove = (
-    index: number,
-    e: React.MouseEvent<HTMLDivElement>
-  ) => {
-    if (isMobile) return;
+      if (!slider || !state?.isDown) return;
 
-    const slider = scrollRefs.current[index];
-    const state = dragStates[index];
+      e.preventDefault();
 
-    if (!slider || !state?.isDown) return;
+      const x = e.pageX - slider.offsetLeft;
+      const walk = (x - state.startX) * 1.5;
 
-    e.preventDefault();
+      slider.scrollLeft = state.scrollLeft - walk * (isArabic ? -1 : 1);
+    },
+    [dragStates, isArabic, isMobile]
+  );
 
-    const x = e.pageX - slider.offsetLeft;
-    const walk = (x - state.startX) * 1.5;
+  const goToCategories = useCallback(() => {
+    window.location.href = "/categories";
+  }, []);
 
-    slider.scrollLeft = state.scrollLeft - walk * (isArabic ? -1 : 1);
-  };
+  const goToBlogs = useCallback(() => {
+    window.location.href = "/blogs";
+  }, []);
 
   return (
     <div
@@ -578,17 +478,9 @@ export default function App() {
     >
       <div className="home-noise" />
 
-      <Header
-        lang={lang}
-        onLanguageChange={setLang}
-        currentPage="home"
-      />
+      <Header lang={lang} onLanguageChange={setLang} currentPage="home" />
 
-      <main
-        key={`main-${lang}`}
-        className="page-content py-4 py-md-5"
-        dir={pageDir}
-      >
+      <main key={`main-${lang}`} className="page-content py-4 py-md-5" dir={pageDir}>
         {sections.map((section, index) => (
           <SliderSection
             key={`${lang}-${section.name}`}
@@ -613,21 +505,12 @@ export default function App() {
             scrollLeftFn={scrollLeftFn}
             scrollRightFn={scrollRightFn}
             lang="en"
-            onSeeMore={() => {
-              window.location.href = "/categories";
-            }}
+            onSeeMore={goToCategories}
           />
         ))}
 
         <section className="content-section row-5" dir={pageDir}>
-          <SectionHeader
-            title="BLOGS"
-            chipImage={chipShapeUri}
-            onSeeMore={() => {
-              window.location.href = "/blogs";
-            }}
-            lang="en"
-          />
+          <SectionHeader title="BLOGS" chipImage={chipShapeUri} onSeeMore={goToBlogs} lang="en" />
 
           <div className="slider-shell slider-row-5">
             {!isMobile && (
@@ -643,15 +526,15 @@ export default function App() {
                   alt=""
                   className="arrow-icon left"
                   draggable={false}
+                  loading="lazy"
+                  decoding="async"
                 />
               </button>
             )}
 
             <div className="slider-viewport">
               <div
-                className={`scroll-container ${
-                  dragStates[4]?.isDown ? "dragging" : ""
-                }`}
+                className={`scroll-container ${dragStates[4]?.isDown ? "dragging" : ""}`}
                 ref={(el) => {
                   scrollRefs.current[4] = el;
                 }}
@@ -689,6 +572,8 @@ export default function App() {
                   alt=""
                   className="arrow-icon right"
                   draggable={false}
+                  loading="lazy"
+                  decoding="async"
                 />
               </button>
             )}
@@ -699,7 +584,9 @@ export default function App() {
       <BackToTop />
 
       <div className="footer-direction-shell" dir={pageDir}>
-        <Footer lang={lang} />
+        <Suspense fallback={null}>
+          <Footer lang={lang} />
+        </Suspense>
       </div>
     </div>
   );

@@ -54,6 +54,11 @@ const EMPTY_HOME_DATA: HomeApiData = {
   unread_nitification_count: 0,
 };
 
+const HOME_CACHE_KEY = "error505_home_data_cache_v1";
+const HOME_CACHE_TTL = 5 * 60 * 1000;
+
+let memoryHomeCache: { data: HomeApiData; createdAt: number } | null = null;
+
 const normalizeHomeData = (payload: any): HomeApiData => {
   const data = payload?.data?.data ?? payload?.data ?? payload ?? {};
 
@@ -68,9 +73,51 @@ const normalizeHomeData = (payload: any): HomeApiData => {
   };
 };
 
-export const getHomeData = async (): Promise<HomeApiData> => {
+const isFresh = (createdAt: number) => Date.now() - createdAt < HOME_CACHE_TTL;
+
+export const readCachedHomeData = (): HomeApiData | null => {
+  if (memoryHomeCache && isFresh(memoryHomeCache.createdAt)) return memoryHomeCache.data;
+
+  if (typeof window === "undefined") return null;
+
+  try {
+    const raw = window.sessionStorage.getItem(HOME_CACHE_KEY);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as { data?: HomeApiData; createdAt?: number };
+    if (!parsed?.data || !parsed.createdAt || !isFresh(parsed.createdAt)) return null;
+
+    memoryHomeCache = { data: parsed.data, createdAt: parsed.createdAt };
+    return parsed.data;
+  } catch {
+    return null;
+  }
+};
+
+const writeCachedHomeData = (data: HomeApiData) => {
+  const createdAt = Date.now();
+  memoryHomeCache = { data, createdAt };
+
+  if (typeof window === "undefined") return;
+
+  try {
+    window.sessionStorage.setItem(HOME_CACHE_KEY, JSON.stringify({ data, createdAt }));
+  } catch {
+    // ignore storage errors
+  }
+};
+
+export const getHomeData = async (forceRefresh = false): Promise<HomeApiData> => {
+  if (!forceRefresh) {
+    const cached = readCachedHomeData();
+    if (cached) return cached;
+  }
+
   const response = await API.get("home");
-  return normalizeHomeData(response);
+  const data = normalizeHomeData(response);
+  writeCachedHomeData(data);
+
+  return data;
 };
 
 // Kept for compatibility with any old imports.

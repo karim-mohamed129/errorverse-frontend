@@ -1,19 +1,21 @@
-import axios from 'axios';
+import axios from "axios";
 
 const API = axios.create({
-  baseURL: 'https://dreamhrms.com/error_505/api/', 
+  baseURL: "https://dreamhrms.com/error_505/api/",
+  timeout: 12000,
   headers: {
-    'Accept': 'application/json',
+    Accept: "application/json",
   },
 });
 
 API.interceptors.request.use((config) => {
-  if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('token');
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
   }
+
   return config;
 });
 
