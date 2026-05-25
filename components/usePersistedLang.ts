@@ -1,8 +1,19 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Lang } from "./Header";
 
-const STORAGE_KEY = "site_lang";
-const LEGACY_STORAGE_KEYS = ["siteLang", "appLang", "lang", "i18nextLng"];
+/*
+  Online English default fix
+  --------------------------
+  Old live versions may have saved Arabic in localStorage keys such as:
+  site_lang / siteLang / appLang / lang / i18nextLng.
+
+  We now read from a new versioned key only. On the first online load,
+  there is no v2 key, so the app starts in English and then rewrites
+  the old keys to English. If the user manually chooses Arabic later,
+  Arabic will still be saved normally.
+*/
+const STORAGE_KEY = "error505_site_lang_v2";
+const LEGACY_STORAGE_KEYS = ["site_lang", "siteLang", "appLang", "lang", "i18nextLng"];
 const LANG_CHANGE_EVENT = "error505-language-change";
 const DEFAULT_LANG: Lang = "en";
 
@@ -19,11 +30,6 @@ function readSavedLang(defaultLang: Lang = DEFAULT_LANG): Lang {
 
     const saved = window.localStorage.getItem(STORAGE_KEY);
     if (isLang(saved)) return saved;
-
-    for (const key of LEGACY_STORAGE_KEYS) {
-      const legacySaved = window.localStorage.getItem(key);
-      if (isLang(legacySaved)) return legacySaved;
-    }
 
     return defaultLang;
   } catch {
@@ -44,6 +50,8 @@ function writeSavedLang(lang: Lang) {
 
   try {
     window.localStorage.setItem(STORAGE_KEY, lang);
+
+    // Keep old keys synced so old code cannot force Arabic again.
     LEGACY_STORAGE_KEYS.forEach((key) => window.localStorage.setItem(key, lang));
   } catch {
     // ignore storage errors
